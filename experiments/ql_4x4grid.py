@@ -4,6 +4,8 @@ import sys
 
 import pandas as pd
 
+from sumo_rl.agents.clr_ql_agent import CQLAgent
+
 
 if "SUMO_HOME" in os.environ:
     tools = os.path.join(os.environ["SUMO_HOME"], "tools")
@@ -20,14 +22,15 @@ if __name__ == "__main__":
     alpha = 0.1
     gamma = 0.99
     decay = 1
-    runs = 30
-    episodes = 4
+    runs = 1
+    episodes = 1
 
     env = SumoEnvironment(
         net_file="nets/4x4-Lucas/4x4.net.xml",
-        route_file="nets/4x4-Lucas/4x4c1c2c1c2.rou.xml",
+        route_file="nets/4x4-Lucas/4x4c1.rou.xml",
         use_gui=False,
-        num_seconds=80000,
+        reward_fn="queue",
+        num_seconds=20000,
         min_green=5,
         delta_time=5,
     )
@@ -35,10 +38,11 @@ if __name__ == "__main__":
     for run in range(1, runs + 1):
         initial_states = env.reset()
         ql_agents = {
-            ts: QLAgent(
+            ts: CQLAgent(
                 starting_state=env.encode(initial_states[ts], ts),
                 state_space=env.observation_space,
                 action_space=env.action_space,
+                name=f"outputs/4x4/ts_k_dist/ql-4x4grid_run{run}_ep1_ts{ts}",
                 alpha=alpha,
                 gamma=gamma,
                 exploration_strategy=EpsilonGreedy(initial_epsilon=0.05, min_epsilon=0.005, decay=decay),
@@ -51,6 +55,7 @@ if __name__ == "__main__":
                 initial_states = env.reset()
                 for ts in initial_states.keys():
                     ql_agents[ts].state = env.encode(initial_states[ts], ts)
+                    ql_agents[ts].name = f"outputs/4x4/ts_k_dist/ql-4x4grid_run{run}_ep{episode}_ts{ts}"
 
             infos = []
             done = {"__all__": False}
@@ -60,8 +65,8 @@ if __name__ == "__main__":
                 s, r, done, info = env.step(action=actions)
 
                 for agent_id in s.keys():
-                    ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])
+                    ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])  # type: ignore
 
-            env.save_csv(f"outputs/4x4/ql-4x4grid_run{run}", episode)
+            env.save_csv(f"outputs/4x4/cql-4x4grid_run{run}", episode)
 
     env.close()
