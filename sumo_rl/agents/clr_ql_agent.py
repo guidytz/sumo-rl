@@ -28,7 +28,7 @@ class CQLAgent:
         self.beta = 1
         self.eta = 0.1
         self.clustering_samples: np.ndarray = np.zeros(shape=(1, 11))
-        self.rewards: np.ndarray = np.zeros(shape=(1, 0))
+        self.rewards: np.ndarray = np.zeros(shape=(1, 1))
         self.name = name
 
     def act(self):
@@ -45,8 +45,15 @@ class CQLAgent:
         s1 = next_state
         a = self.action
 
-        self.clustering_samples = np.append(self.clustering_samples, [[*self.state, self.action]], axis=0)
-        self.rewards = np.append(self.rewards, self._transform_reward(reward))
+        state_action = [*self.state, self.action]
+        finds = np.where(np.all(np.isclose(self.clustering_samples, state_action), axis=1))
+        if len(finds[0]) > 0:
+            index = finds[0][0]
+            self.clustering_samples[index] = state_action
+            self.rewards[index] = self._transform_reward(reward)
+        else:
+            self.clustering_samples = np.append(self.clustering_samples, [state_action], axis=0)
+            self.rewards = np.append(self.rewards, self._transform_reward(reward))
 
         if self.clustering_samples.shape[0] >= 20:
             n_clusters = self.clustering_samples.shape[0] // 10
