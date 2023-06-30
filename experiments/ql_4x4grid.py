@@ -21,7 +21,9 @@ from sumo_rl.exploration import EpsilonGreedy
 if __name__ == "__main__":
     alpha = 0.1
     gamma = 0.99
-    decay = 1
+    decay = 0.99965
+    epsilon = 1
+    min_epsilon = 0.05
     runs = 1
     episodes = 1
 
@@ -45,7 +47,7 @@ if __name__ == "__main__":
                 name=f"outputs/4x4/ts_k_dist/ql-4x4grid_run{run}_ep1_ts{ts}",
                 alpha=alpha,
                 gamma=gamma,
-                exploration_strategy=EpsilonGreedy(initial_epsilon=0.05, min_epsilon=0.005, decay=decay),
+                exploration_strategy=EpsilonGreedy(initial_epsilon=epsilon, min_epsilon=min_epsilon, decay=decay),
             )
             for ts in env.ts_ids
         }
