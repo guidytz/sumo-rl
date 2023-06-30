@@ -57,7 +57,7 @@ class CQLAgent:
 
         if self.clustering_samples.shape[0] >= 20:
             n_clusters = self.clustering_samples.shape[0] // 10
-            alg = KMeans(n_clusters=n_clusters).fit(self.clustering_samples)
+            alg = KMeans(n_clusters=n_clusters, n_init="auto").fit(self.clustering_samples)
             rewards = {label: 0 for label in alg.labels_}
             sizes = {label: 0 for label in alg.labels_}
 
