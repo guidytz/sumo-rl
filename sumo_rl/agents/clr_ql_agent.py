@@ -13,7 +13,16 @@ class CQLAgent:
     """Q-learning Agent class."""
 
     def __init__(
-        self, starting_state, state_space, action_space, name: str, alpha=0.5, gamma=0.95, exploration_strategy=EpsilonGreedy()
+        self,
+        starting_state,
+        state_space,
+        action_space,
+        name: str,
+        alpha=0.5,
+        gamma=0.95,
+        beta=1,
+        eta=1,
+        exploration_strategy=EpsilonGreedy(),
     ):
         """Initialize Q-learning agent."""
         self.state = starting_state
@@ -25,8 +34,8 @@ class CQLAgent:
         self.q_table = {self.state: [0 for _ in range(action_space.n)]}
         self.exploration = exploration_strategy
         self.acc_reward = 0
-        self.beta = 1
-        self.eta = 0.1
+        self.beta = beta
+        self.eta = eta
         self.clustering_samples: np.ndarray = np.zeros(shape=(1, 11))
         self.rewards: np.ndarray = np.zeros(shape=(1, 1))
         self.name = name
