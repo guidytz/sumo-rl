@@ -1,4 +1,5 @@
 """Q-learning Agent class."""
+import random
 import sys
 from pathlib import Path
 
@@ -54,15 +55,16 @@ class CQLAgent:
         s1 = next_state
         a = self.action
 
-        state_action = [*self.state, self.action]
-        finds = np.where(np.all(np.isclose(self.clustering_samples, state_action), axis=1))
-        if len(finds[0]) > 0:
-            index = finds[0][0]
-            self.clustering_samples[index] = state_action
-            self.rewards[index] = self._transform_reward(reward)
-        else:
-            self.clustering_samples = np.append(self.clustering_samples, [state_action], axis=0)
-            self.rewards = np.append(self.rewards, self._transform_reward(reward))
+        if random.random() > 0.5:
+            state_action = [*self.state, self.action]
+            finds = np.where(np.all(np.isclose(self.clustering_samples, state_action), axis=1))
+            if len(finds[0]) > 0:
+                index = finds[0][0]
+                self.clustering_samples[index] = state_action
+                self.rewards[index] = self._transform_reward(reward)
+            else:
+                self.clustering_samples = np.append(self.clustering_samples, [state_action], axis=0)
+                self.rewards = np.append(self.rewards, self._transform_reward(reward))
 
         if self.clustering_samples.shape[0] >= 20:
             n_clusters = self.clustering_samples.shape[0] // 10
