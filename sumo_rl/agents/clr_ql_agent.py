@@ -23,6 +23,7 @@ class CQLAgent:
         gamma=0.95,
         beta=1,
         eta=1,
+        sampling_threshold=0.5,
         exploration_strategy=EpsilonGreedy(),
     ):
         """Initialize Q-learning agent."""
@@ -40,6 +41,7 @@ class CQLAgent:
         self.clustering_samples: np.ndarray = np.zeros(shape=(1, 11))
         self.rewards: np.ndarray = np.zeros(shape=(1, 1))
         self.name = name
+        self.sampling_threshold = sampling_threshold
 
     def act(self):
         """Choose action based on Q-table."""
@@ -55,7 +57,7 @@ class CQLAgent:
         s1 = next_state
         a = self.action
 
-        if random.random() > 0.5:
+        if random.random() > self.sampling_threshold:
             state_action = [*self.state, self.action]
             finds = np.where(np.all(np.isclose(self.clustering_samples, state_action), axis=1))
             if len(finds[0]) > 0:

@@ -28,6 +28,7 @@ if __name__ == "__main__":
     decay = 0.99965
     beta = 1
     eta = 0.1
+    sampling_threshold = 0.5
     epsilon = 1
     min_epsilon = 0.05
     runs = 1
@@ -55,6 +56,7 @@ if __name__ == "__main__":
                 gamma=gamma,
                 beta=beta,
                 eta=eta,
+                sampling_threshold=sampling_threshold,
                 exploration_strategy=EpsilonGreedy(initial_epsilon=epsilon, min_epsilon=min_epsilon, decay=decay),
             )
             for ts in env.ts_ids
@@ -86,7 +88,8 @@ if __name__ == "__main__":
                 f"_gamma{serialize_value(gamma)}_"
                 f"_beta{serialize_value(beta)}_"
                 f"_eta{serialize_value(eta)}_"
-                f"_eta{serialize_value(eta)}"
+                f"_eta{serialize_value(eta)}_"
+                f"_sp{serialize_value(sam)}_"
             )
             env.save_csv(file_name, episode)
 
