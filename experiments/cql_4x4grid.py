@@ -89,7 +89,7 @@ if __name__ == "__main__":
                 f"_beta{serialize_value(beta)}_"
                 f"_eta{serialize_value(eta)}_"
                 f"_eta{serialize_value(eta)}_"
-                f"_sp{serialize_value(sam)}_"
+                f"_sp{serialize_value(sampling_threshold)}_"
             )
             env.save_csv(file_name, episode)
 
