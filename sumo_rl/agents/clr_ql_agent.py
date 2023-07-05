@@ -48,7 +48,7 @@ class CQLAgent:
         self.action = self.exploration.choose(self.q_table, self.state, self.action_space)
         return self.action
 
-    def learn(self, next_state, reward, done=False):
+    def learn(self, next_state, reward, done=False) -> tuple[float, float]:
         """Update Q-table with new experience."""
         if next_state not in self.q_table:
             self.q_table[next_state] = [0 for _ in range(self.action_space.n)]
@@ -56,6 +56,8 @@ class CQLAgent:
         s = self.state
         s1 = next_state
         a = self.action
+        bonus = 0.0
+        orig_rw = reward
 
         if random.random() > self.sampling_threshold:
             state_action = [*self.state, self.action]
@@ -70,36 +72,31 @@ class CQLAgent:
 
         if self.clustering_samples.shape[0] >= 20:
             n_clusters = self.clustering_samples.shape[0] // 10
-            alg = KMeans(n_clusters=n_clusters, n_init="auto").fit(self.clustering_samples)
+            alg = KMeans(n_clusters=n_clusters).fit(self.clustering_samples)
             rewards = {label: 0 for label in alg.labels_}
             sizes = {label: 0 for label in alg.labels_}
 
-            for reward, label in zip(self.rewards, alg.labels_):
-                rewards[label] += reward
+            for rw, label in zip(self.rewards, alg.labels_):
+                rewards[label] += rw
                 sizes[label] += 1
 
-            # if self.should_sample_sizes:
-            #     sz_save = {"cluster_id": [], "size": []}
-            #     rw_save = {"cluster_id": [], "reward": []}
-            #     for id, size in sizes.items():
-            #         sz_save["cluster_id"].append(id)
-            #         sz_save["size"].append(size)
+            if self.should_sample_sizes:
+                sz_save = {"cluster_id": [], "size": [], "reward": []}
+                for id, size, rw in zip(*sizes.items(), rewards.values()):
+                    sz_save["cluster_id"].append(id)
+                    sz_save["size"].append(size)
+                    sz_save["reward"].append(rw)
 
-            #     for id, reward in rewards.items():
-            #         rw_save["cluster_id"].append(id)
-            #         rw_save["reward"].append(reward)
-
-            #     sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index()
-            #     rw_save = pd.DataFrame(rw_save).set_index(["cluster_id"], drop=True).sort_index()
-            #     df = pd.concat([sz_save, rw_save], axis=1)
-            #     Path(Path(self.name).parent).mkdir(parents=True, exist_ok=True)
-            #     name = "_".join(self.name.split("_")[:-1])
-            #     ts = self.name.split("_")[-1]
-            #     df.to_csv(f"{name}_samples_{self.clustering_samples.shape[0]}_{ts}.csv")
+                sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index()
+                Path(Path(self.name).parent).mkdir(parents=True, exist_ok=True)
+                name = "_".join(self.name.split("_")[:-1])
+                ts = self.name.split("_")[-1]
+                sz_save.to_csv(f"{name}_samples_{self.clustering_samples.shape[0]}_{ts}.csv")
 
             predict = alg.predict([[*s, a]])[0]
             try:
-                reward += self._bonus(rewards[predict], sizes[predict])
+                bonus = self._bonus(rewards[predict], sizes[predict])
+                reward += bonus
             except KeyError as err:
                 print(f"Key {predict} not present.\n {err}", file=sys.stderr)
 
@@ -108,6 +105,7 @@ class CQLAgent:
         )
         self.state = s1
         self.acc_reward += reward
+        return orig_rw, reward, bonus
 
     @property
     def should_sample_sizes(self) -> bool:

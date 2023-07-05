@@ -23,6 +23,7 @@ def serialize_value(value: float) -> str:
 
 
 if __name__ == "__main__":
+    steps = 500
     alpha = 0.1
     gamma = 0.99
     decay = 0.99965
@@ -39,7 +40,7 @@ if __name__ == "__main__":
         route_file="nets/4x4-Lucas/4x4c1.rou.xml",
         use_gui=False,
         reward_fn="queue",
-        num_seconds=20000,
+        num_seconds=steps,
         min_green=5,
         delta_time=5,
     )
@@ -71,16 +72,25 @@ if __name__ == "__main__":
 
             infos = []
             done = {"__all__": False}
+            rw_bonus_agg = pd.DataFrame({"step": [], "agent_id": [], "original_rw": [], "reward": [], "bonus": []})
             while not done["__all__"]:
                 actions = {ts: ql_agents[ts].act() for ts in ql_agents.keys()}
 
                 s, r, done, info = env.step(action=actions)
+                step_data = {"step": [], "agent_id": [], "original_rw": [], "reward": [], "bonus": []}
 
                 for agent_id in s.keys():
-                    ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])  # type: ignore
+                    orig_rw, reward, bonus = ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])  # type: ignore
+                    step_data["step"].append(info["step"])
+                    step_data["agent_id"].append(agent_id)
+                    step_data["original_rw"].append(orig_rw)
+                    step_data["reward"].append(reward)
+                    step_data["bonus"].append(bonus)
+                rw_bonus_agg = pd.concat([rw_bonus_agg, pd.DataFrame(step_data)], ignore_index=True)
 
             file_name = (
                 f"outputs/4x4/cql-4x4grid_run{run}"
+                f"_steps{steps}_"
                 f"_epsilon{serialize_value(epsilon)}_"
                 f"_decay{serialize_value(decay)}_"
                 f"_min_epsilon{serialize_value(min_epsilon)}_"
@@ -88,9 +98,9 @@ if __name__ == "__main__":
                 f"_gamma{serialize_value(gamma)}_"
                 f"_beta{serialize_value(beta)}_"
                 f"_eta{serialize_value(eta)}_"
-                f"_eta{serialize_value(eta)}_"
                 f"_sp{serialize_value(sampling_threshold)}_"
             )
+            rw_bonus_agg.to_csv(f"{file_name}_rw_bonus_data.csv", index=False)
             env.save_csv(file_name, episode)
 
     env.close()
