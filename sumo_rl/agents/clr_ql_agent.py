@@ -1,4 +1,5 @@
 """Q-learning Agent class."""
+import os
 import random
 import sys
 from pathlib import Path
@@ -70,8 +71,8 @@ class CQLAgent:
                 self.clustering_samples = np.append(self.clustering_samples, [state_action], axis=0)
                 self.rewards = np.append(self.rewards, self._transform_reward(reward))
 
-        if self.clustering_samples.shape[0] >= 20:
-            n_clusters = self.clustering_samples.shape[0] // 10
+        if self.clustering_samples.shape[0] >= 100:
+            n_clusters = self.clustering_samples.shape[0] // 100
             alg = KMeans(n_clusters=n_clusters, n_init="auto").fit(self.clustering_samples)
             rewards = {label: 0 for label in alg.labels_}
             sizes = {label: 0 for label in alg.labels_}
@@ -109,6 +110,9 @@ class CQLAgent:
 
     @property
     def should_sample_sizes(self) -> bool:
+        if os.getenv("DUMP_CLUSTERS") is None:
+            return False
+
         return self.clustering_samples.shape[0] == 20 or self.clustering_samples.shape[0] % 400 == 0
 
     def _transform_reward(self, reward: float) -> float:
