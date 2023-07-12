@@ -26,6 +26,7 @@ class CQLAgent:
         eta=1,
         sampling_threshold=0.5,
         exploration_strategy=EpsilonGreedy(),
+        split_size=10,
     ):
         """Initialize Q-learning agent."""
         self.state = starting_state
@@ -43,13 +44,14 @@ class CQLAgent:
         self.rewards: np.ndarray = np.zeros(shape=(1, 1))
         self.name = name
         self.sampling_threshold = sampling_threshold
+        self.split_size = split_size
 
     def act(self):
         """Choose action based on Q-table."""
         self.action = self.exploration.choose(self.q_table, self.state, self.action_space)
         return self.action
 
-    def learn(self, next_state, reward, done=False) -> tuple[float, float]:
+    def learn(self, next_state, reward, done=False) -> tuple[float, float, float, pd.DataFrame]:
         """Update Q-table with new experience."""
         if next_state not in self.q_table:
             self.q_table[next_state] = [0 for _ in range(self.action_space.n)]
@@ -71,9 +73,10 @@ class CQLAgent:
                 self.clustering_samples = np.append(self.clustering_samples, [state_action], axis=0)
                 self.rewards = np.append(self.rewards, self._transform_reward(reward))
 
-        if self.clustering_samples.shape[0] >= 100:
-            n_clusters = self.clustering_samples.shape[0] // 100
-            alg = KMeans(n_clusters=n_clusters, n_init="auto").fit(self.clustering_samples)
+        cluster_data = pd.DataFrame()
+        if self.clustering_samples.shape[0] >= self.split_size * 2:
+            n_clusters = self.clustering_samples.shape[0] // self.split_size
+            alg = KMeans(n_clusters=n_clusters).fit(self.clustering_samples)
             rewards = {label: 0 for label in alg.labels_}
             sizes = {label: 0 for label in alg.labels_}
 
@@ -82,17 +85,19 @@ class CQLAgent:
                 sizes[label] += 1
 
             if self.should_sample_sizes:
-                sz_save = {"cluster_id": [], "size": [], "reward": []}
-                for id, size, rw in zip(*sizes.items(), rewards.values()):
+                sz_save = {"cluster_id": [], "size": [], "reward": [], "rw_over_size": []}
+                for (id, size), rw in zip(sizes.items(), rewards.values()):
                     sz_save["cluster_id"].append(id)
                     sz_save["size"].append(size)
                     sz_save["reward"].append(rw)
+                    sz_save["rw_over_size"].append(rw / size)
 
-                sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index()
-                Path(Path(self.name).parent).mkdir(parents=True, exist_ok=True)
-                name = "_".join(self.name.split("_")[:-1])
-                ts = self.name.split("_")[-1]
-                sz_save.to_csv(f"{name}_samples_{self.clustering_samples.shape[0]}_{ts}.csv")
+                sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index().reset_index()
+                cluster_data = sz_save
+
+            Path(Path(self.name).parent).mkdir(parents=True, exist_ok=True)
+            name = "_".join(self.name.split("_")[:-1])
+            cluster_data.to_csv(f"{name}_samples_{self.clustering_samples.shape[0]}.csv")
 
             predict = alg.predict([[*s, a]])[0]
             try:
@@ -106,7 +111,7 @@ class CQLAgent:
         )
         self.state = s1
         self.acc_reward += reward
-        return orig_rw, reward, bonus
+        return orig_rw, reward, bonus, cluster_data
 
     @property
     def should_sample_sizes(self) -> bool:

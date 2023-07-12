@@ -23,7 +23,7 @@ def serialize_value(value: float) -> str:
 
 
 if __name__ == "__main__":
-    steps = 500
+    steps = 20000
     alpha = 0.1
     gamma = 0.99
     decay = 0.99965
@@ -34,6 +34,7 @@ if __name__ == "__main__":
     min_epsilon = 0.05
     runs = 1
     episodes = 1
+    split_size = 10
 
     env = SumoEnvironment(
         net_file="nets/4x4-Lucas/4x4.net.xml",
@@ -59,6 +60,7 @@ if __name__ == "__main__":
                 eta=eta,
                 sampling_threshold=sampling_threshold,
                 exploration_strategy=EpsilonGreedy(initial_epsilon=epsilon, min_epsilon=min_epsilon, decay=decay),
+                split_size=split_size,
             )
             for ts in env.ts_ids
         }
@@ -98,6 +100,7 @@ if __name__ == "__main__":
                 f"_gamma{serialize_value(gamma)}_"
                 f"_beta{serialize_value(beta)}_"
                 f"_eta{serialize_value(eta)}_"
+                f"_split{split_size}_"
                 f"_sp{serialize_value(sampling_threshold)}_"
             )
             rw_bonus_agg.to_csv(f"{file_name}_rw_bonus_data.csv", index=False)
