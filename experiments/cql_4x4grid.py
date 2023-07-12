@@ -75,6 +75,9 @@ if __name__ == "__main__":
             infos = []
             done = {"__all__": False}
             rw_bonus_agg = pd.DataFrame({"step": [], "agent_id": [], "original_rw": [], "reward": [], "bonus": []})
+            cluster_step_data = pd.DataFrame(
+                {"step": [], "agent_id": [], "cluster_id": [], "size": [], "reward": [], "rw_over_size": []}
+            )
             while not done["__all__"]:
                 actions = {ts: ql_agents[ts].act() for ts in ql_agents.keys()}
 
@@ -82,12 +85,16 @@ if __name__ == "__main__":
                 step_data = {"step": [], "agent_id": [], "original_rw": [], "reward": [], "bonus": []}
 
                 for agent_id in s.keys():
-                    orig_rw, reward, bonus = ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])  # type: ignore
+                    orig_rw, reward, bonus, agent_cluster_data = ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])  # type: ignore
                     step_data["step"].append(info["step"])
                     step_data["agent_id"].append(agent_id)
                     step_data["original_rw"].append(orig_rw)
                     step_data["reward"].append(reward)
                     step_data["bonus"].append(bonus)
+                    if not agent_cluster_data.empty:
+                        agent_cluster_data["step"] = env.sim_step
+                        agent_cluster_data["agent_id"] = agent_id
+                        cluster_step_data = pd.concat([cluster_step_data, agent_cluster_data], ignore_index=True)
                 rw_bonus_agg = pd.concat([rw_bonus_agg, pd.DataFrame(step_data)], ignore_index=True)
 
             file_name = (
@@ -105,5 +112,6 @@ if __name__ == "__main__":
             )
             env.save_csv(file_name, episode)
             rw_bonus_agg.to_csv(f"{file_name}_rw_bonus_data.csv", index=False)
+            cluster_step_data.to_csv(f"{file_name}_cluster_step_data.csv", index=False)
 
     env.close()
