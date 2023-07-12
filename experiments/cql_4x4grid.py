@@ -26,11 +26,11 @@ if __name__ == "__main__":
     steps = 20000
     alpha = 0.1
     gamma = 0.99
-    decay = 0.99965
+    decay = 1
     beta = 1
     eta = 0.1
-    sampling_threshold = 0.5
-    epsilon = 1
+    sampling_threshold = 0
+    epsilon = 0.05
     min_epsilon = 0.05
     runs = 1
     episodes = 1
@@ -103,7 +103,7 @@ if __name__ == "__main__":
                 f"_split{split_size}_"
                 f"_sp{serialize_value(sampling_threshold)}_"
             )
-            rw_bonus_agg.to_csv(f"{file_name}_rw_bonus_data.csv", index=False)
             env.save_csv(file_name, episode)
+            rw_bonus_agg.to_csv(f"{file_name}_rw_bonus_data.csv", index=False)
 
     env.close()
