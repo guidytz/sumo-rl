@@ -95,10 +95,6 @@ class CQLAgent:
                 sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index().reset_index()
                 cluster_data = sz_save
 
-            Path(Path(self.name).parent).mkdir(parents=True, exist_ok=True)
-            name = "_".join(self.name.split("_")[:-1])
-            cluster_data.to_csv(f"{name}_samples_{self.clustering_samples.shape[0]}.csv")
-
             predict = alg.predict([[*s, a]])[0]
             try:
                 bonus = self._bonus(rewards[predict], sizes[predict])
