@@ -76,14 +76,13 @@ if __name__ == "__main__":
             done = {"__all__": False}
             rw_bonus_agg = pd.DataFrame({"step": [], "agent_id": [], "original_rw": [], "reward": [], "bonus": []})
             cluster_step_data = pd.DataFrame(
-                {"step": [], "agent_id": [], "cluster_id": [], "size": [], "reward": [], "rw_over_size": []}
+                {"step": [], "agent_id": [], "cluster_id": [], "bonus": [],"size": [], "reward": [], "rw_over_size": [], "inertia": []}
             )
             while not done["__all__"]:
                 actions = {ts: ql_agents[ts].act() for ts in ql_agents.keys()}
 
                 s, r, done, info = env.step(action=actions)
                 step_data = {"step": [], "agent_id": [], "original_rw": [], "reward": [], "bonus": []}
-
                 for agent_id in s.keys():
                     orig_rw, reward, bonus, agent_cluster_data = ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])  # type: ignore
                     step_data["step"].append(info["step"])

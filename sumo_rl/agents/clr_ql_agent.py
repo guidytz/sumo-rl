@@ -85,12 +85,19 @@ class CQLAgent:
                 sizes[label] += 1
 
             if self.should_sample_sizes:
-                sz_save = {"cluster_id": [], "size": [], "reward": [], "rw_over_size": []}
+                sz_save = {"cluster_id": [], "bonus": [],"size": [], "reward": [], "rw_over_size": [], "inertia": []}
                 for (id, size), rw in zip(sizes.items(), rewards.values()):
                     sz_save["cluster_id"].append(id)
+                    try:
+                        bonus = self._bonus(rewards[id], sizes[id])
+                        sz_save["bonus"].append(bonus)
+                    except KeyError as err:
+                        print(f"Key {id} not present.\n {err}", file=sys.stderr)
+
                     sz_save["size"].append(size)
                     sz_save["reward"].append(rw)
                     sz_save["rw_over_size"].append(rw / size)
+                    sz_save["inertia"].append(alg.inertia_)
 
                 sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index().reset_index()
                 cluster_data = sz_save
