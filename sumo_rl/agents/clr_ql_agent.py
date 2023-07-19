@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
+from sklearn.discriminant_analysis import StandardScaler
+from sklearn.pipeline import Pipeline
 
 from sumo_rl.exploration.epsilon_greedy import EpsilonGreedy
 
@@ -76,16 +78,18 @@ class CQLAgent:
         cluster_data = pd.DataFrame()
         if self.clustering_samples.shape[0] >= self.split_size * 2:
             n_clusters = self.clustering_samples.shape[0] // self.split_size
-            alg = KMeans(n_clusters=n_clusters, n_init="auto").fit(self.clustering_samples)
-            rewards = {label: 0 for label in alg.labels_}
-            sizes = {label: 0 for label in alg.labels_}
+            alg = KMeans(n_clusters=n_clusters)
+            pipe = Pipeline([("scaler", StandardScaler()), ("kmeans", alg)])
+            pipe.fit(self.clustering_samples)
+            rewards = {label: 0 for label in pipe.named_steps["kmeans"].labels_}
+            sizes = {label: 0 for label in pipe.named_steps["kmeans"].labels_}
 
-            for rw, label in zip(self.rewards, alg.labels_):
+            for rw, label in zip(self.rewards, pipe.named_steps["kmeans"].labels_):
                 rewards[label] += rw
                 sizes[label] += 1
 
             if self.should_sample_sizes:
-                sz_save = {"cluster_id": [], "bonus": [],"size": [], "reward": [], "rw_over_size": [], "inertia": []}
+                sz_save = {"cluster_id": [], "bonus": [], "size": [], "reward": [], "rw_over_size": [], "inertia": []}
                 for (id, size), rw in zip(sizes.items(), rewards.values()):
                     sz_save["cluster_id"].append(id)
                     try:
@@ -97,12 +101,13 @@ class CQLAgent:
                     sz_save["size"].append(size)
                     sz_save["reward"].append(rw)
                     sz_save["rw_over_size"].append(rw / size)
-                    sz_save["inertia"].append(alg.inertia_)
+                    sz_save["inertia"].append(pipe.named_steps["kmeans"].inertia_)
 
                 sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index().reset_index()
                 cluster_data = sz_save
+                print(cluster_data)
 
-            predict = alg.predict([[*s, a]])[0]
+            predict = pipe.predict([[*s, a]])[0]
             try:
                 bonus = self._bonus(rewards[predict], sizes[predict])
                 reward += bonus
