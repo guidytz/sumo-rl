@@ -105,7 +105,6 @@ class CQLAgent:
 
                 sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index().reset_index()
                 cluster_data = sz_save
-                print(cluster_data)
 
             predict = pipe.predict([[*s, a]])[0]
             try:
