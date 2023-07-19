@@ -76,7 +76,20 @@ if __name__ == "__main__":
             done = {"__all__": False}
             rw_bonus_agg = pd.DataFrame({"step": [], "agent_id": [], "original_rw": [], "reward": [], "bonus": []})
             cluster_step_data = pd.DataFrame(
-                {"step": [], "agent_id": [], "cluster_id": [], "bonus": [],"size": [], "reward": [], "rw_over_size": [], "inertia": []}
+                {
+                    "step": [],
+                    "agent_id": [],
+                    "cluster_id": [],
+                    "bonus": [],
+                    "size": [],
+                    "reward": [],
+                    "rw_over_size": [],
+                    "inertia": [],
+                    "min_dist": [],
+                    "max_dist": [],
+                    "avg_dist": [],
+                    "std_dist": [],
+                }
             )
             while not done["__all__"]:
                 actions = {ts: ql_agents[ts].act() for ts in ql_agents.keys()}

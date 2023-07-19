@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.discriminant_analysis import StandardScaler
+from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.pipeline import Pipeline
 
 from sumo_rl.exploration.epsilon_greedy import EpsilonGreedy
@@ -89,7 +90,18 @@ class CQLAgent:
                 sizes[label] += 1
 
             if self.should_sample_sizes:
-                sz_save = {"cluster_id": [], "bonus": [], "size": [], "reward": [], "rw_over_size": [], "inertia": []}
+                sz_save = {
+                    "cluster_id": [],
+                    "bonus": [],
+                    "size": [],
+                    "reward": [],
+                    "rw_over_size": [],
+                    "inertia": [],
+                    "min_dist": [],
+                    "max_dist": [],
+                    "avg_dist": [],
+                    "std_dist": [],
+                }
                 for (id, size), rw in zip(sizes.items(), rewards.values()):
                     sz_save["cluster_id"].append(id)
                     try:
@@ -102,6 +114,11 @@ class CQLAgent:
                     sz_save["reward"].append(rw)
                     sz_save["rw_over_size"].append(rw / size)
                     sz_save["inertia"].append(pipe.named_steps["kmeans"].inertia_)
+                    min_dist, max_dist, avg_dist, std_dist = self.calc_intra_cluster_distance(id, pipe.named_steps["kmeans"])
+                    sz_save["min_dist"].append(min_dist)
+                    sz_save["max_dist"].append(max_dist)
+                    sz_save["avg_dist"].append(avg_dist)
+                    sz_save["std_dist"].append(std_dist)
 
                 sz_save = pd.DataFrame(sz_save).set_index(["cluster_id"], drop=True).sort_index().reset_index()
                 cluster_data = sz_save
@@ -122,10 +139,18 @@ class CQLAgent:
 
     @property
     def should_sample_sizes(self) -> bool:
-        if os.getenv("DUMP_CLUSTERS") is None:
-            return False
+        return self.clustering_samples.shape[0] == (self.split_size * 2) or self.clustering_samples.shape[0] % 100 == 0
 
-        return self.clustering_samples.shape[0] == 20 or self.clustering_samples.shape[0] % 400 == 0
+    def calc_intra_cluster_distance(self, cluster_id, kmeans_alg) -> tuple[float, float, float, float]:
+        filter = [label == cluster_id for label in kmeans_alg.labels_]
+        cluster_samples = self.clustering_samples[filter]
+        size = cluster_samples.shape[0]
+        if size < 2:
+            return 0.0, 0.0, 0.0, 0.0
+
+        dists = euclidean_distances(cluster_samples)
+        tri_dists = dists[np.triu_indices(size, 1)]
+        return tri_dists.min(), tri_dists.max(), tri_dists.mean(), tri_dists.std()
 
     def _transform_reward(self, reward: float) -> float:
         try:
