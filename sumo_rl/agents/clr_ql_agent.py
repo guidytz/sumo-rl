@@ -78,7 +78,7 @@ class CQLAgent:
         cluster_data = pd.DataFrame()
         if self.clustering_samples.shape[0] >= self.split_size * 2:
             n_clusters = self.clustering_samples.shape[0] // self.split_size
-            alg = KMeans(n_clusters=n_clusters)
+            alg = KMeans(n_clusters=n_clusters, n_init="auto")
             pipe = Pipeline([("scaler", StandardScaler()), ("kmeans", alg)])
             pipe.fit(self.clustering_samples)
             rewards = {label: 0 for label in pipe.named_steps["kmeans"].labels_}
