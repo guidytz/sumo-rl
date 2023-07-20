@@ -22,19 +22,18 @@ def serialize_value(value: float) -> str:
     return str(value).replace(".", "_")
 
 
-if __name__ == "__main__":
-    steps = 20000
-    alpha = 0.1
-    gamma = 0.99
-    decay = 1
-    beta = 1
-    eta = 0.1
-    sampling_threshold = 0
-    epsilon = 0.05
-    min_epsilon = 0.05
-    runs = 1
-    episodes = 1
-    split_size = 10
+def main(steps = 20000,
+         alpha = 0.1,
+         gamma = 0.99,
+         decay = 1,
+         beta = 1,
+         eta = 0.1,
+         sampling_threshold = 0,
+         epsilon = 0.05,
+         min_epsilon = 0.05,
+         runs = 1,
+         episodes = 1,
+         split_size = 10):
 
     env = SumoEnvironment(
         net_file="nets/4x4-Lucas/4x4.net.xml",
@@ -127,3 +126,10 @@ if __name__ == "__main__":
             cluster_step_data.to_csv(f"{file_name}_cluster_step_data.csv", index=False)
 
     env.close()
+
+
+
+if __name__ == "__main__":
+    for split_size in [2, 8, 10]:
+        main(steps=20000, split_size=split_size)
+
