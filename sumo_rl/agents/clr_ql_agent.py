@@ -64,6 +64,7 @@ class CQLAgent:
         a = self.action
         bonus = 0.0
         orig_rw = reward
+        reward = self._transform_reward(reward)
 
         if random.random() > self.sampling_threshold:
             state_action = [*self.state, self.action]
@@ -71,10 +72,10 @@ class CQLAgent:
             if len(finds[0]) > 0:
                 index = finds[0][0]
                 self.clustering_samples[index] = state_action
-                self.rewards[index] = self._transform_reward(reward)
+                self.rewards[index] = reward
             else:
                 self.clustering_samples = np.append(self.clustering_samples, [state_action], axis=0)
-                self.rewards = np.append(self.rewards, self._transform_reward(reward))
+                self.rewards = np.append(self.rewards, reward)
 
         cluster_data = pd.DataFrame()
         if self.clustering_samples.shape[0] >= self.split_size * 2:
@@ -142,8 +143,10 @@ class CQLAgent:
         return self.clustering_samples.shape[0] == (self.split_size * 2) or self.clustering_samples.shape[0] % 100 == 0
 
     def calc_intra_cluster_distance(self, cluster_id, kmeans_alg) -> tuple[float, float, float, float]:
+        scaler = StandardScaler()
+        samples = scaler.fit_transform(self.clustering_samples)
         filter = [label == cluster_id for label in kmeans_alg.labels_]
-        cluster_samples = self.clustering_samples[filter]
+        cluster_samples = samples[filter]
         size = cluster_samples.shape[0]
         if size < 2:
             return 0.0, 0.0, 0.0, 0.0
