@@ -37,7 +37,7 @@ def main(steps = 20000,
 
     env = SumoEnvironment(
         net_file="nets/4x4-Lucas/4x4.net.xml",
-        route_file="nets/4x4-Lucas/4x4c1.rou.xml",
+        route_file="nets/4x4-Lucas/4x4c3.rou.xml",
         use_gui=False,
         reward_fn="queue",
         num_seconds=steps,
@@ -109,7 +109,7 @@ def main(steps = 20000,
                 rw_bonus_agg = pd.concat([rw_bonus_agg, pd.DataFrame(step_data)], ignore_index=True)
 
             file_name = (
-                f"outputs/4x4/cql-4x4grid_run{run}"
+                f"outputs/4x4/cql-4x4grid_run_probdem_{run}"
                 f"_steps{steps}_"
                 f"_epsilon{serialize_value(epsilon)}_"
                 f"_decay{serialize_value(decay)}_"
@@ -130,6 +130,6 @@ def main(steps = 20000,
 
 
 if __name__ == "__main__":
-    for split_size in [2, 8, 10]:
+    for split_size in [2, 10]:
         main(steps=20000, split_size=split_size)
 
