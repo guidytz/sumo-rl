@@ -63,6 +63,6 @@ if __name__ == "__main__":
                 for agent_id in s.keys():
                     ql_agents[agent_id].learn(next_state=env.encode(s[agent_id], agent_id), reward=r[agent_id])  # type: ignore
 
-            env.save_csv(f"outputs/4x4/cql-4x4grid_run{run}", episode)
+            env.save_csv(f"outputs/4x4/ql-4x4grid_run{run}", episode)
 
     env.close()
