@@ -64,7 +64,6 @@ class CQLAgent:
         a = self.action
         bonus = 0.0
         orig_rw = reward
-        reward = self._transform_reward(reward)
 
         if random.random() > self.sampling_threshold:
             state_action = [*self.state, self.action]
@@ -72,7 +71,7 @@ class CQLAgent:
             if len(finds[0]) > 0:
                 index = finds[0][0]
                 self.clustering_samples[index] = state_action
-                self.rewards[index] = reward
+                self.rewards[index] = -reward
             else:
                 self.clustering_samples = np.append(self.clustering_samples, [state_action], axis=0)
                 self.rewards = np.append(self.rewards, reward)
@@ -83,11 +82,11 @@ class CQLAgent:
             alg = KMeans(n_clusters=n_clusters, n_init="auto")
             pipe = Pipeline([("scaler", StandardScaler()), ("kmeans", alg)])
             pipe.fit(self.clustering_samples)
-            rewards = {label: 0 for label in pipe.named_steps["kmeans"].labels_}
+            rwds = {label: 0 for label in pipe.named_steps["kmeans"].labels_}
             sizes = {label: 0 for label in pipe.named_steps["kmeans"].labels_}
 
             for rw, label in zip(self.rewards, pipe.named_steps["kmeans"].labels_):
-                rewards[label] += rw
+                rwds[label] += rw
                 sizes[label] += 1
 
             if self.should_sample_sizes:
@@ -103,10 +102,10 @@ class CQLAgent:
                     "avg_dist": [],
                     "std_dist": [],
                 }
-                for (id, size), rw in zip(sizes.items(), rewards.values()):
+                for (id, size), rw in zip(sizes.items(), rwds.values()):
                     sz_save["cluster_id"].append(id)
                     try:
-                        bonus = self._bonus(rewards[id], sizes[id])
+                        bonus = -self._bonus(rwds[id], sizes[id])
                         sz_save["bonus"].append(bonus)
                     except KeyError as err:
                         print(f"Key {id} not present.\n {err}", file=sys.stderr)
@@ -126,7 +125,7 @@ class CQLAgent:
 
             predict = pipe.predict([[*s, a]])[0]
             try:
-                bonus = self._bonus(rewards[predict], sizes[predict])
+                bonus = -self._bonus(rwds[predict], sizes[predict])
                 reward += bonus
             except KeyError as err:
                 print(f"Key {predict} not present.\n {err}", file=sys.stderr)

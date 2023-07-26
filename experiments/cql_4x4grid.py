@@ -131,4 +131,4 @@ def main(
 
 if __name__ == "__main__":
     for split_size in [2, 10, 50, 100]:
-        main(steps=2000, split_size=split_size)
+        main(steps=20000, split_size=split_size)
